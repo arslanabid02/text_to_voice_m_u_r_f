@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-const MURF_API_KEY="ap2_73ee81b1-6bcf-48de-91f8-edf37d628033"
+const MURF_API_KEY = 'ap2_73ee81b1-6bcf-48de-91f8-edf37d628033';
 
 type Voice = {
   voiceId: string;
@@ -12,9 +12,15 @@ type Voice = {
   accent?: string;
 };
 
+const DEFAULT_VOICE: Voice = {
+  voiceId: 'en-US-daisy',
+  displayName: 'Daisy (F)',
+  locale: 'en-US',
+};
+
 export default function Home() {
-  const [voices, setVoices] = useState<Voice[]>([]);
-  const [voiceId, setVoiceId] = useState('');
+  const [voices, setVoices] = useState<Voice[]>([DEFAULT_VOICE]);
+  const [voiceId, setVoiceId] = useState(DEFAULT_VOICE.voiceId);
   const [text, setText] = useState('');
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -32,7 +38,7 @@ export default function Home() {
         const data = await response.json();
         console.log('VOICES RESPONSE:', data);
 
-        // Fix: if backend returns an object instead of array
+        // Convert object → array if needed
         let voicesArray: Voice[] = [];
         if (Array.isArray(data)) {
           voicesArray = data;
@@ -40,12 +46,23 @@ export default function Home() {
           voicesArray = Object.values(data);
         }
 
-        if (voicesArray.length > 0) {
-          setVoices(voicesArray);
-          setVoiceId(voicesArray[0].voiceId);
+        // ✅ Ensure DEFAULT_VOICE is always included
+        const hasDefault = voicesArray.some(
+          (v) => v.voiceId === DEFAULT_VOICE.voiceId
+        );
+        if (!hasDefault) {
+          voicesArray.unshift(DEFAULT_VOICE);
         }
+
+        setVoices(voicesArray);
+
+        // If Daisy exists in fetched voices, keep as default selected
+        setVoiceId(DEFAULT_VOICE.voiceId);
       } catch (error) {
         console.error('Failed to fetch voices', error);
+        // If fetch fails, voices remain as just Daisy
+        setVoices([DEFAULT_VOICE]);
+        setVoiceId(DEFAULT_VOICE.voiceId);
       }
     };
 
